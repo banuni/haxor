@@ -1,0 +1,24 @@
+@import "tailwindcss";
+
+
+@layer base {
+    @theme {
+
+    --color-avocado-100: oklch(0.99 0 0);
+    --color-avocado-200: oklch(0.98 0.04 113.22);
+    --color-avocado-300: oklch(0.94 0.11 115.03);
+    --color-avocado-400: oklch(0.92 0.19 114.08);
+    --color-avocado-500: oklch(0.84 0.18 117.33);
+    --color-avocado-600: oklch(0.53 0.12 118.34);
+
+
+    --color-eggplant-100: oklch(74.71% 0.1258 282.71);
+    --color-eggplant-200: oklch(52.82% 0.1258 282.71);
+    --color-eggplant-300: oklch(39.42% 0.1258 282.71);
+    --color-eggplant-400: oklch(29.12% 0.1357 282.71);
+    --color-eggplant-500: oklch(27.35% 0.111 282.71);
+    --color-eggplant-600: oklch(24.41% 0.111 282.71);
+    
+    --font-display: "Satoshi", "sans-serif";
+
+}}
