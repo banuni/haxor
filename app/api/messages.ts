@@ -1,36 +1,41 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { createServerFn, useServerFn } from "@tanstack/start";
 import { startAnalysisIfNeeded, startHackIfNeeded } from "./messageProcessors";
+import { getDb } from "../db/core";
+import { messages, type Message, type NewMessage } from "../db/schema";
+import { desc, isNull } from "drizzle-orm";
 
-export type Message = {
-  id: string;
-  from: {
-    name: string;
-    role: string;
-  };
-  content: string;
+const createMessageInDb = async (newMessage: NewMessage) => {
+  const [message] = await getDb()
+    .insert(messages)
+    .values({ ...newMessage, id: crypto.randomUUID(), createdAt: new Date() })
+    .returning();
+
+  return message;
 };
-let id = 0;
 
-let messages: Message[] = [];
-
+// Get messages that haven't been cleared
 const getMessages = createServerFn({
   method: "GET",
 }).handler(async () => {
-  return messages;
+  return await getDb()
+    .select()
+    .from(messages)
+    .where(isNull(messages.clearedAt))
+    .limit(20)
+    .orderBy(desc(messages.createdAt));
 });
 
-const postMessage = createServerFn({
+const createMessage = createServerFn({
   method: "POST",
 })
-  .validator((data) => data)
+  .validator((data: NewMessage) => data)
   .handler(async (ctx) => {
-    messages.push(ctx.data);
-    processMessage(ctx.data);
+    const message = await createMessageInDb(ctx.data);
+    await processMessage(message);
   });
 
-const processMessage = (message: Message) => {
-  console.log(message);
+const processMessage = async (message: Message) => {
   const messageParts = message.content.split(" ", 4);
   if (messageParts.length !== 4) {
     return;
@@ -40,27 +45,23 @@ const processMessage = (message: Message) => {
       messageParts[0].toLowerCase() === "check") &&
     messageParts[2].toLowerCase() === "using"
   ) {
-    const { taskId, message: analysisMessage } = startAnalysisIfNeeded(message);
+    const { taskId, message: analysisMessage } =
+      await startAnalysisIfNeeded(message);
     if (taskId) {
-      messages.push({
-        id: Math.random().toString(),
+      await createMessageInDb({
+        fromName: "System",
+        fromRole: "system",
         content: analysisMessage,
-        from: {
-          name: "System",
-          role: "system",
-        },
       });
     }
+
     const { taskId: hackTaskId, message: hackResultMessage } =
-      startHackIfNeeded(message);
+      await startHackIfNeeded(message);
     if (hackTaskId) {
-      messages.push({
-        id: Math.random().toString(),
-        content: hackResultMessage,
-        from: {
-          name: "System",
-          role: "system",
-        },
+      await createMessageInDb({
+        fromName: "System",
+        fromRole: "system",
+        content: hackResultMessage ?? "",
       });
     }
   }
@@ -69,25 +70,23 @@ const processMessage = (message: Message) => {
 // client side
 export const useMessages = () => {
   const messages = useServerFn(getMessages);
-  const addMessage = useServerFn(postMessage);
+  const addMessage = useServerFn(createMessage);
   const query = useQuery({
     queryKey: ["messages"],
     queryFn: () => messages(),
     refetchInterval: 1000,
   });
+
   const mutation = useMutation({
-    mutationFn: (message: Omit<Message, "id">) => {
-      id += 1;
-      return addMessage({
-        data: {
-          ...message,
-          id: id.toString(),
-        },
-      });
+    mutationFn: (message: NewMessage) => {
+      return addMessage({ data: message });
     },
     onSuccess: () => {
       query.refetch();
     },
   });
-  return { messages: query.data ?? [], addMessage: mutation.mutate };
+
+  const toDisplay = query.data ? [...query.data].reverse() : [];
+
+  return { messages: toDisplay, addMessage: mutation.mutate };
 };

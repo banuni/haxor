@@ -1,7 +1,11 @@
-import { createTask, getTaskByTargetAndAlgorithm } from "./tasks";
-import type { Message } from "./messages";
+import {
+  createTaskInDb,
+  getTaskByTargetAndAlgorithm,
+  updateTaskInDb,
+} from "./tasks";
+import type { Message } from "../db/schema";
 
-export function startAnalysisIfNeeded(message: Message) {
+export async function startAnalysisIfNeeded(message: Message) {
   const messageParts = message.content.split(" ", 4);
   if (messageParts.length !== 4) {
     return { taskId: null, message: null };
@@ -13,31 +17,29 @@ export function startAnalysisIfNeeded(message: Message) {
   const algorithmName = messageParts[3];
 
   const description = `Analyzing - target: ${targetName} algorithm: ${algorithmName}`;
-  const taskId = Math.random().toString();
-  createTask({
-    data: {
-      id: taskId,
-      description,
-      status: "analyzing",
-      startedAt: null,
-      targetName,
-      algorithmName,
-    },
+  const task = await createTaskInDb({
+    description,
+    taskType: "disable",
+    status: "analyzing",
+    startedAt: null,
+    targetName,
+    algorithmName,
   });
-  return { taskId, message: description };
+  return { taskId: task.id, message: description };
 }
 
-export function startHackIfNeeded(message: Message) {
+export async function startHackIfNeeded(message: Message) {
   const messageParts = message.content.split(" ", 4);
   if (messageParts.length !== 4) {
     return { taskId: null, message: null };
   }
   const targetName = messageParts[1];
   const algorithmName = messageParts[3];
-  const task = getTaskByTargetAndAlgorithm(targetName, algorithmName);
-  if (!task) {
+  const task = await getTaskByTargetAndAlgorithm(targetName, algorithmName);
+  if (!task || task.status !== "pending") {
     return { taskId: null, message: null };
   }
+  await updateTaskInDb(task.id, { status: "in-progress" });
   return {
     taskId: task.id,
     message: `Hacking ${targetName} using ${algorithmName} - will take ${task.estimatedSecondsToComplete} seconds`,

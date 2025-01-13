@@ -10,15 +10,16 @@ export const Route = createFileRoute("/player")({
 
 function RouteComponent() {
   const { messages, addMessage } = useMessages();
-  console.log(messages);
   const [username, setUsername] = useState("John");
   const targetInputRef = useRef<HTMLInputElement>(null);
   const algorithmInputRef = useRef<HTMLSelectElement>(null);
   const handleEnterClick = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") {
+      const message = e.currentTarget.value;
       addMessage({
-        from: { name: username, role: "user" },
-        content: e.currentTarget.value,
+        fromName: username,
+        fromRole: "user",
+        content: message,
       });
       e.currentTarget.value = "";
     }
@@ -37,7 +38,8 @@ function RouteComponent() {
       return;
     }
     addMessage({
-      from: { name: username, role: "system" },
+      fromName: username,
+      fromRole: "system",
       content: `CHECK ${target} using ${algorithm}`,
     });
   };
@@ -48,7 +50,8 @@ function RouteComponent() {
       return;
     }
     addMessage({
-      from: { name: username, role: "system" },
+      fromName: username,
+      fromRole: "system",
       content: `HACK ${target} using ${algorithm}`,
     });
   };
@@ -63,7 +66,7 @@ function RouteComponent() {
           </button>
           {messages.map((message, idx) => (
             <div key={idx} className="flex gap-2">
-              <div>{message.from.name}:</div>
+              <div>{message.fromName}:</div>
               <div>{message.content}</div>
             </div>
           ))}
@@ -126,19 +129,23 @@ function RouteComponent() {
 
 const supportMessages = [
   {
-    from: { name: "System", role: "system" },
+    fromName: "System",
+    fromRole: "system",
     content: "alpha - probablity - X time y",
   },
   {
-    from: { name: "System", role: "system" },
+    fromName: "System",
+    fromRole: "system",
     content: "beta - probablity - Xx time yyy",
   },
   {
-    from: { name: "System", role: "system" },
+    fromName: "System",
+    fromRole: "system",
     content: "gamma - probablity - Xxxx time yyyy",
   },
   {
-    from: { name: "System", role: "system" },
+    fromName: "System",
+    fromRole: "system",
     content: "delta - probablity - xX time yyyyy",
   },
 ];
