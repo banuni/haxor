@@ -1,11 +1,10 @@
-import { useMutation, useQuery } from "@tanstack/react-query";
-import { createServerFn, useServerFn } from "@tanstack/start";
-import { startAnalysisIfNeeded, startHackIfNeeded } from "./messageProcessors";
-import { getDb } from "../db/core";
-import { messages, type Message, type NewMessage } from "../db/schema";
-import { desc, isNull } from "drizzle-orm";
+import { useMutation, useQuery } from '@tanstack/react-query';
+import { createServerFn, useServerFn } from '@tanstack/start';
+import { getDb } from '../db/core';
+import { messages, type Message, type NewMessage } from '../db/schema';
+import { desc, isNull } from 'drizzle-orm';
 
-const createMessageInDb = async (newMessage: NewMessage) => {
+export const createMessageInDb = async (newMessage: NewMessage) => {
   const [message] = await getDb()
     .insert(messages)
     .values({ ...newMessage, id: crypto.randomUUID(), createdAt: new Date() })
@@ -16,18 +15,13 @@ const createMessageInDb = async (newMessage: NewMessage) => {
 
 // Get messages that haven't been cleared
 const getMessages = createServerFn({
-  method: "GET",
+  method: 'GET',
 }).handler(async () => {
-  return await getDb()
-    .select()
-    .from(messages)
-    .where(isNull(messages.clearedAt))
-    .limit(20)
-    .orderBy(desc(messages.createdAt));
+  return await getDb().select().from(messages).where(isNull(messages.clearedAt)).limit(20).orderBy(desc(messages.createdAt));
 });
 
 const createMessage = createServerFn({
-  method: "POST",
+  method: 'POST',
 })
   .validator((data: NewMessage) => data)
   .handler(async (ctx) => {
@@ -36,35 +30,8 @@ const createMessage = createServerFn({
   });
 
 const processMessage = async (message: Message) => {
-  const messageParts = message.content.split(" ", 4);
-  if (messageParts.length !== 4) {
-    return;
-  }
-  if (
-    (messageParts[0].toLowerCase() === "hack" ||
-      messageParts[0].toLowerCase() === "check") &&
-    messageParts[2].toLowerCase() === "using"
-  ) {
-    const { taskId, message: analysisMessage } =
-      await startAnalysisIfNeeded(message);
-    if (taskId) {
-      await createMessageInDb({
-        fromName: "System",
-        fromRole: "system",
-        content: analysisMessage,
-      });
-    }
-
-    const { taskId: hackTaskId, message: hackResultMessage } =
-      await startHackIfNeeded(message);
-    if (hackTaskId) {
-      await createMessageInDb({
-        fromName: "System",
-        fromRole: "system",
-        content: hackResultMessage ?? "",
-      });
-    }
-  }
+  // some custom logic here
+  // might not be needed
 };
 
 // client side
@@ -72,7 +39,7 @@ export const useMessages = () => {
   const messages = useServerFn(getMessages);
   const addMessage = useServerFn(createMessage);
   const query = useQuery({
-    queryKey: ["messages"],
+    queryKey: ['messages'],
     queryFn: () => messages(),
     refetchInterval: 1000,
   });

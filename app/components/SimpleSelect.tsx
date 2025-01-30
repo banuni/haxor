@@ -1,20 +1,6 @@
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "./ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 
-export function SimpleSelect({
-  options,
-  defaultValue,
-  onChange,
-}: {
-  options: string[];
-  defaultValue: string;
-  onChange: (value: string) => void;
-}) {
+export function SimpleSelect({ options, defaultValue, onChange }: { options: string[]; defaultValue: string; onChange: (value: string) => void }) {
   return (
     <Select defaultValue={defaultValue} onValueChange={onChange}>
       <SelectTrigger className="w-[180px]">

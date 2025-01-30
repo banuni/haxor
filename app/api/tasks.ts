@@ -1,31 +1,24 @@
-import { useMutation, useQuery } from "@tanstack/react-query";
-import { createServerFn, useServerFn } from "@tanstack/start";
-import { differenceInSeconds } from "date-fns";
-import { and, eq, ne } from "drizzle-orm";
-import { useEffect } from "react";
+import { useMutation, useQuery } from '@tanstack/react-query';
+import { createServerFn, useServerFn } from '@tanstack/start';
+import { differenceInSeconds } from 'date-fns';
+import { and, eq, isNull, ne } from 'drizzle-orm';
+import { useEffect } from 'react';
 
-import { getAlgorithmResult } from "./content/algorithm";
-import { getDb } from "../db/core";
-import { tasks, type Task, type NewTask } from "../db/schema";
+import { getDb } from '../db/core';
+import { tasks, type Task, type NewTask } from '../db/schema';
+import { getAnalysisResultMessage, getHackResultMessage } from './content/messageTemplates';
+import { createMessageInDb } from './messages';
 
 export const getTask = async (taskId: string) => {
   const [task] = await getDb().select().from(tasks).where(eq(tasks.id, taskId));
   return task;
 };
 
-export const getTaskByTargetAndAlgorithm = async (
-  targetName: string,
-  algorithmName: string,
-) => {
+export const getTaskByTargetAndAlgorithm = async (targetName: string, algorithmName: string) => {
   const [task] = await getDb()
     .select()
     .from(tasks)
-    .where(
-      and(
-        eq(tasks.targetName, targetName),
-        eq(tasks.algorithmName, algorithmName),
-      ),
-    );
+    .where(and(eq(tasks.targetName, targetName), eq(tasks.algorithmName, algorithmName)));
   return task;
 };
 
@@ -37,42 +30,36 @@ export const createTaskInDb = async (newTask: NewTask) => {
   return task;
 };
 
-export const updateTaskInDb = async (
-  taskId: string,
-  newTask: Partial<Task>,
-) => {
+export const updateTaskInDb = async (taskId: string, newTask: Partial<Task>) => {
   await getDb().update(tasks).set(newTask).where(eq(tasks.id, taskId));
 };
 
 const getTasksEp = createServerFn({
-  method: "GET",
-}).handler(async () => {
-  const retTasks = await getDb()
-    .select()
-    .from(tasks)
-    .where(ne(tasks.status, "aborted"));
-  return retTasks;
-});
+  method: 'GET',
+})
+  .validator((data: { showAborted?: boolean; showArchived?: boolean }) => data)
+  .handler(async (ctx) => {
+    const showAborted = ctx.data?.showAborted || false;
+    const showArchived = ctx.data?.showArchived || false;
+    const retTasks = await getDb()
+      .select()
+      .from(tasks)
+      .where(and(...(!showAborted ? [ne(tasks.status, 'aborted')] : []), ...(!showArchived ? [isNull(tasks.archivedAt)] : [])));
+    return retTasks;
+  });
 
 async function abortTask(taskId: string) {
-  await getDb()
-    .update(tasks)
-    .set({ status: "aborted" })
-    .where(eq(tasks.id, taskId));
+  await getDb().update(tasks).set({ status: 'aborted' }).where(eq(tasks.id, taskId));
 }
 
-async function resolveAnalysis(taskId: string) {
+async function resolveAnalysis(taskId: string, probability: number, secondsToComplete: number) {
   const task = await getTask(taskId);
   if (!task) {
     return;
   }
-  const { secondsToComplete, probability } = getAlgorithmResult(
-    task.algorithmName,
-    task.targetName,
-  );
 
   await updateTaskInDb(taskId, {
-    status: "pending",
+    status: 'pending',
     startedAt: new Date(),
     probability,
     estimatedSecondsToComplete: secondsToComplete,
@@ -80,19 +67,28 @@ async function resolveAnalysis(taskId: string) {
 }
 
 const resolveAnalysisEp = createServerFn({
-  method: "POST",
+  method: 'POST',
 })
-  .validator((data: { taskId: string }) => data)
+  .validator((data: { taskId: string; probability: number; secondsToComplete: number }) => data)
   .handler(async (ctx) => {
-    await resolveAnalysis(ctx.data.taskId);
+    await resolveAnalysis(ctx.data.taskId, ctx.data.probability, ctx.data.secondsToComplete);
+    const task = await getTask(ctx.data.taskId);
+    if (!task) {
+      return;
+    }
+    await createMessageInDb({
+      fromName: 'System',
+      fromRole: 'master',
+      content: getAnalysisResultMessage(task.targetName, task.algorithmName, ctx.data.secondsToComplete, ctx.data.probability),
+    });
   });
 
 const startTaskEp = createServerFn({
-  method: "POST",
+  method: 'POST',
 })
   .validator((taskId: string) => {
-    if (typeof taskId !== "string") {
-      throw new Error("Task ID is required");
+    if (typeof taskId !== 'string') {
+      throw new Error('Task ID is required');
     }
     return taskId;
   })
@@ -100,32 +96,28 @@ const startTaskEp = createServerFn({
     await getDb()
       .update(tasks)
       .set({
-        status: "in-progress",
+        status: 'in-progress',
         startedAt: new Date(),
       })
       .where(eq(tasks.id, ctx.data));
   });
 
 const checkAllTasks = createServerFn({
-  method: "POST",
+  method: 'POST',
 }).handler(async () => {
   let taskResolved = false;
-  const inProgressTasks = await getDb()
-    .select()
-    .from(tasks)
-    .where(eq(tasks.status, "in-progress"));
+  const inProgressTasks = await getDb().select().from(tasks).where(eq(tasks.status, 'in-progress'));
 
   for (const task of inProgressTasks) {
     if (task.startedAt && task.estimatedSecondsToComplete && task.probability) {
-      if (
-        differenceInSeconds(new Date(), task.startedAt) >
-        task.estimatedSecondsToComplete
-      ) {
-        const newStatus = Math.random() < task.probability ? "success" : "fail";
-        await getDb()
-          .update(tasks)
-          .set({ status: newStatus })
-          .where(eq(tasks.id, task.id));
+      if (differenceInSeconds(new Date(), task.startedAt) > task.estimatedSecondsToComplete) {
+        const newStatus = Math.random() < task.probability ? 'success' : 'fail';
+        await getDb().update(tasks).set({ status: newStatus }).where(eq(tasks.id, task.id));
+        await createMessageInDb({
+          fromName: 'System',
+          fromRole: 'master',
+          content: getHackResultMessage(task.targetName, task.algorithmName, newStatus),
+        });
         taskResolved = true;
       }
     }
@@ -134,7 +126,7 @@ const checkAllTasks = createServerFn({
 });
 
 export const abortTaskEp = createServerFn({
-  method: "POST",
+  method: 'POST',
 })
   .validator((taskId: string) => {
     return taskId;
@@ -143,21 +135,51 @@ export const abortTaskEp = createServerFn({
     await abortTask(ctx.data);
   });
 
-// client side
-export const useTasks = () => {
+export const createTaskEp = createServerFn({
+  method: 'POST',
+})
+  .validator((newTask: NewTask) => {
+    return newTask;
+  })
+  .handler(async (ctx) => {
+    await createTaskInDb(ctx.data);
+  });
+
+const archiveTaskEp = createServerFn({
+  method: 'POST',
+})
+  .validator((taskId: string) => {
+    return taskId;
+  })
+  .handler(async (ctx) => {
+    await getDb().update(tasks).set({ archivedAt: new Date() }).where(eq(tasks.id, ctx.data));
+  });
+
+// client side code
+export const useTasks = ({ showAborted = false, showArchived = false }: { showAborted?: boolean; showArchived?: boolean } = {}) => {
   const tasks = useServerFn(getTasksEp);
   const checkAllTasksFn = useServerFn(checkAllTasks);
   const resolveAnalysisFn = useServerFn(resolveAnalysisEp);
   const abortTaskFn = useServerFn(abortTaskEp);
   const startTaskFn = useServerFn(startTaskEp);
+  const archiveTaskFn = useServerFn(archiveTaskEp);
+  const createTaskFn = useServerFn(createTaskEp);
   const getTasksQuery = useQuery({
-    queryKey: ["tasks"],
-    queryFn: () => tasks(),
-    refetchInterval: 3000,
+    queryKey: ['tasks', showAborted, showArchived],
+    queryFn: () => tasks({ data: { showAborted, showArchived } }),
+    refetchInterval: 1000,
+  });
+
+  const createTaskMutation = useMutation({
+    mutationFn: createTaskFn,
   });
 
   const resolveAnalysisMutation = useMutation({
     mutationFn: resolveAnalysisFn,
+  });
+
+  const archiveTaskMutation = useMutation({
+    mutationFn: archiveTaskFn,
   });
 
   const checkAllTasksMutation = useMutation({
@@ -186,10 +208,11 @@ export const useTasks = () => {
 
   return {
     tasks: getTasksQuery.data,
-    resolveAnalysis: ({ taskId }: { taskId: string }) =>
-      resolveAnalysisMutation.mutate({ data: { taskId } }),
+    resolveAnalysis: (data: { taskId: string; probability: number; secondsToComplete: number }) => resolveAnalysisMutation.mutate({ data }),
     checkAllTasks: checkAllTasksMutation,
     startTask: (taskId: string) => startTaskMutation.mutate({ data: taskId }),
     abortTask: (taskId: string) => abortTaskMutation.mutate({ data: taskId }),
+    archiveTask: (taskId: string) => archiveTaskMutation.mutate({ data: taskId }),
+    createTask: (newTask: NewTask) => createTaskMutation.mutate({ data: newTask }),
   };
 };

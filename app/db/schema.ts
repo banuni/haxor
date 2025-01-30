@@ -31,6 +31,7 @@ export const tasks = sqliteTable("tasks", {
   createdAt: integer("created_at", { mode: "timestamp" })
     .default(sql`CURRENT_TIMESTAMP`)
     .notNull(),
+  archivedAt: integer("archived_at", { mode: "timestamp" }),
 });
 
 // Types for TypeScript

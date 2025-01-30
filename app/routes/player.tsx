@@ -1,27 +1,29 @@
-import { useMessages } from "../api/messages";
-import { createFileRoute } from "@tanstack/react-router";
-import { TasksPanel } from "../TasksPanel";
-import { useTasks } from "../api/tasks";
-import { useRef, useState } from "react";
+import { useMessages } from '../api/messages';
+import { createFileRoute } from '@tanstack/react-router';
+import { TasksPanel } from '../components/PlayerTasksPanel';
+import { useTasks } from '../api/tasks';
+import { useRef, useState } from 'react';
+import { getAnalysisMessage } from '../api/content/messageTemplates';
 
-export const Route = createFileRoute("/player")({
+export const Route = createFileRoute('/player')({
   component: RouteComponent,
 });
 
 function RouteComponent() {
   const { messages, addMessage } = useMessages();
-  const [username, setUsername] = useState("John");
+  const { createTask } = useTasks();
+  const [username, setUsername] = useState('John');
   const targetInputRef = useRef<HTMLInputElement>(null);
   const algorithmInputRef = useRef<HTMLSelectElement>(null);
   const handleEnterClick = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter") {
+    if (e.key === 'Enter') {
       const message = e.currentTarget.value;
       addMessage({
         fromName: username,
-        fromRole: "user",
+        fromRole: 'user',
         content: message,
       });
-      e.currentTarget.value = "";
+      e.currentTarget.value = '';
     }
   };
   const onSupportClick = () => {
@@ -39,21 +41,25 @@ function RouteComponent() {
     }
     addMessage({
       fromName: username,
-      fromRole: "system",
+      fromRole: 'system',
       content: `CHECK ${target} using ${algorithm}`,
     });
-  };
-  const onHackClick = () => {
-    const target = targetInputRef.current?.value;
-    const algorithm = algorithmInputRef.current?.value;
-    if (!target || !algorithm) {
-      return;
-    }
-    addMessage({
-      fromName: username,
-      fromRole: "system",
-      content: `HACK ${target} using ${algorithm}`,
+    createTask({
+      description: getAnalysisMessage(target, algorithm),
+      taskType: 'disable',
+      status: 'analyzing',
+      startedAt: null,
+      targetName: target,
+      algorithmName: algorithm,
     });
+    setTimeout(() => {
+      addMessage({
+        fromName: 'System',
+        fromRole: 'system',
+        content: getAnalysisMessage(target, algorithm),
+      });
+    }, 1000);
+    targetInputRef.current!.value = '';
   };
 
   return (
@@ -61,9 +67,7 @@ function RouteComponent() {
       <div className="flex flex-col justify-between w-[60%] h-[80%] bg-black">
         <div className="text-[#00ff00] bg-avocado-600">Spaceship Hacker</div>
         <div className="text-[#00ff00] flex flex-col grow relative">
-          <button className="absolute top-0 right-0 p-2 m-1 rounded-md text-white bg-[#2d2d2d] cursor-pointer">
-            clear
-          </button>
+          <button className="absolute top-0 right-0 p-2 m-1 rounded-md text-white bg-[#2d2d2d] cursor-pointer">clear</button>
           {messages.map((message, idx) => (
             <div key={idx} className="flex gap-2">
               <div>{message.fromName}:</div>
@@ -71,56 +75,28 @@ function RouteComponent() {
             </div>
           ))}
         </div>
-        <input
-          type="text"
-          className="rounded-md p-2 border-top border-2 border-white"
-          onKeyDown={handleEnterClick}
-        />
+        <input type="text" className="rounded-md p-2 border-top border-2 border-white" onKeyDown={handleEnterClick} />
         <div className="text-[#00ff00] bg-avocado-600 flex p-4 gap-2">
-          <input
-            type="text"
-            className="rounded-md p-2 bg-black cursor-pointer"
-            placeholder="target"
-            ref={targetInputRef}
-          />
-          <select
-            className="rounded-md p-2 bg-black cursor-pointer"
-            ref={algorithmInputRef}
-          >
+          <input type="text" className="rounded-md p-2 bg-black cursor-pointer" placeholder="target" ref={targetInputRef} />
+          <select className="rounded-md p-2 bg-black cursor-pointer" ref={algorithmInputRef}>
             <option value="alpha">Alpha</option>
             <option value="beta">Beta</option>
             <option value="gamma">Gamma</option>
             <option value="delta">Delta</option>
           </select>
-          <button
-            className="rounded-md p-2 bg-black cursor-pointer"
-            onClick={onCheckClick}
-          >
-            CHECK
+          <button className="rounded-md p-2 bg-black cursor-pointer border-[#00ff00] border-2" onClick={onCheckClick}>
+            Send to Analysis
           </button>
-          <div className="grow">
-            <button
-              className="rounded-md p-2 bg-black cursor-pointer border-[#00ff00] border-2"
-              onClick={onHackClick}
-            >
-              HACK
-            </button>
-          </div>
 
-          <button
-            className="rounded-md p-2 bg-black cursor-pointer"
-            onClick={onSupportClick}
-          >
+          <button className="rounded-md p-2 bg-black cursor-pointer" onClick={onSupportClick}>
             SUPPORT
           </button>
-          <button className="rounded-md p-2 bg-black cursor-pointer">
-            SETTINGS
-          </button>
+          <button className="rounded-md p-2 bg-black cursor-pointer">SETTINGS</button>
         </div>
       </div>
       {tasks && (
         <div className="grow bg-stone-800">
-          <TasksPanel master={false} tasks={tasks} />
+          <TasksPanel tasks={tasks} username={username} />
         </div>
       )}
     </div>
@@ -129,23 +105,23 @@ function RouteComponent() {
 
 const supportMessages = [
   {
-    fromName: "System",
-    fromRole: "system",
-    content: "alpha - probablity - X time y",
+    fromName: 'System',
+    fromRole: 'system',
+    content: 'alpha - probablity - X time y',
   },
   {
-    fromName: "System",
-    fromRole: "system",
-    content: "beta - probablity - Xx time yyy",
+    fromName: 'System',
+    fromRole: 'system',
+    content: 'beta - probablity - Xx time yyy',
   },
   {
-    fromName: "System",
-    fromRole: "system",
-    content: "gamma - probablity - Xxxx time yyyy",
+    fromName: 'System',
+    fromRole: 'system',
+    content: 'gamma - probablity - Xxxx time yyyy',
   },
   {
-    fromName: "System",
-    fromRole: "system",
-    content: "delta - probablity - xX time yyyyy",
+    fromName: 'System',
+    fromRole: 'system',
+    content: 'delta - probablity - xX time yyyyy',
   },
 ];

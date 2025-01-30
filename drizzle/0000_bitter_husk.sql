@@ -10,11 +10,13 @@ CREATE TABLE `messages` (
 CREATE TABLE `tasks` (
 	`id` text PRIMARY KEY NOT NULL,
 	`description` text,
+	`task_type` text NOT NULL,
 	`status` text NOT NULL,
 	`started_at` integer,
 	`probability` integer,
 	`estimated_seconds_to_complete` integer,
 	`target_name` text NOT NULL,
 	`algorithm_name` text NOT NULL,
-	`created_at` integer DEFAULT CURRENT_TIMESTAMP NOT NULL
+	`created_at` integer DEFAULT CURRENT_TIMESTAMP NOT NULL,
+	`archived_at` integer
 );
