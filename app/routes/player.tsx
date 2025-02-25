@@ -4,6 +4,8 @@ import { TasksPanel } from '../components/PlayerTasksPanel';
 import { useTasks } from '../api/tasks';
 import { useRef, useState } from 'react';
 import { getAnalysisMessage } from '../api/content/messageTemplates';
+import { UserSettingsModal } from '../components/UserSettingsModal';
+import { RoundButton } from '../components/ui/round-button';
 
 export const Route = createFileRoute('/player')({
   component: RouteComponent,
@@ -12,7 +14,8 @@ export const Route = createFileRoute('/player')({
 function RouteComponent() {
   const { messages, addMessage } = useMessages();
   const { createTask } = useTasks();
-  const [username, setUsername] = useState('John');
+  const [username, setUsername] = useState('user');
+  const [systemLevel, setSystemLevel] = useState<'basic' | 'pro' | 'premium'>('basic');
   const targetInputRef = useRef<HTMLInputElement>(null);
   const algorithmInputRef = useRef<HTMLSelectElement>(null);
   const handleEnterClick = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -64,10 +67,12 @@ function RouteComponent() {
 
   return (
     <div className="text-[#00ff00] bg-gray-200 flex w-full h-[100vh] font-mono">
-      <div className="flex flex-col justify-between w-[60%] h-[80%] bg-black">
-        <div className="text-[#00ff00] bg-avocado-600">Spaceship Hacker</div>
+      <div className="flex flex-col justify-between w-[60%] bg-black">
+        <div className="flex justify-between">
+          <div className="text-[#00ff00] bg-avocado-600">Spaceship Hacker</div>
+          <UserSettingsModal username={username} setUsername={setUsername} systemLevel={systemLevel} setSystemLevel={setSystemLevel} />
+        </div>
         <div className="text-[#00ff00] flex flex-col grow relative">
-          <button className="absolute top-0 right-0 p-2 m-1 rounded-md text-white bg-[#2d2d2d] cursor-pointer">clear</button>
           {messages.map((message, idx) => (
             <div key={idx} className="flex gap-2">
               <div>{message.fromName}:</div>
@@ -75,8 +80,8 @@ function RouteComponent() {
             </div>
           ))}
         </div>
-        <input type="text" className="rounded-md p-2 border-top border-2 border-white" onKeyDown={handleEnterClick} />
-        <div className="text-[#00ff00] bg-avocado-600 flex p-4 gap-2">
+        <input type="text" className="rounded-md p-2 border-top border-2 border-white bg-black" onKeyDown={handleEnterClick} />
+        <div className="text-[#00ff00] bg-gray-500 flex p-4 gap-2 ">
           <input type="text" className="rounded-md p-2 bg-black cursor-pointer" placeholder="target" ref={targetInputRef} />
           <select className="rounded-md p-2 bg-black cursor-pointer" ref={algorithmInputRef}>
             <option value="alpha">Alpha</option>
@@ -93,6 +98,10 @@ function RouteComponent() {
           </button>
           <button className="rounded-md p-2 bg-black cursor-pointer">SETTINGS</button>
         </div>
+        <div className="flex gap-2 p-4">
+          <RoundButton text="Stealth" state="ready" />
+          <RoundButton text="Another thing" state="active" />
+        </div>
       </div>
       {tasks && (
         <div className="grow bg-stone-800">
@@ -107,21 +116,21 @@ const supportMessages = [
   {
     fromName: 'System',
     fromRole: 'system',
-    content: 'alpha - probablity - X time y',
+    content: 'alpha - probability - X time y',
   },
   {
     fromName: 'System',
     fromRole: 'system',
-    content: 'beta - probablity - Xx time yyy',
+    content: 'beta - probability - Xx time yyy',
   },
   {
     fromName: 'System',
     fromRole: 'system',
-    content: 'gamma - probablity - Xxxx time yyyy',
+    content: 'gamma - probability - Xxxx time yyyy',
   },
   {
     fromName: 'System',
     fromRole: 'system',
-    content: 'delta - probablity - xX time yyyyy',
+    content: 'delta - probability - xX time yyyyy',
   },
 ];

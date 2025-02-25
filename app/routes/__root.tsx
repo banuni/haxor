@@ -7,6 +7,7 @@ import { Meta, Scripts } from "@tanstack/start";
 import type { ReactNode } from "react";
 import appCss from "../styles/globals.css?url";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { Toaster } from "../components/ui/sonner";
 
 export const Route = createRootRoute({
   head: () => ({
@@ -48,6 +49,7 @@ function RootDocument({ children }: Readonly<{ children: ReactNode }>) {
         </QueryClientProvider>
         <ScrollRestoration />
         <Scripts />
+        <Toaster />
       </body>
     </html>
   );

@@ -29,6 +29,12 @@ const createMessage = createServerFn({
     await processMessage(message);
   });
 
+export const clearAllMessages = createServerFn({
+  method: 'POST',
+}).handler(async () => {
+  await getDb().update(messages).set({ clearedAt: new Date() }).where(isNull(messages.clearedAt));
+});
+
 const processMessage = async (message: Message) => {
   // some custom logic here
   // might not be needed
@@ -38,6 +44,7 @@ const processMessage = async (message: Message) => {
 export const useMessages = () => {
   const messages = useServerFn(getMessages);
   const addMessage = useServerFn(createMessage);
+  const clearAllMessagesFn = useServerFn(clearAllMessages);
   const query = useQuery({
     queryKey: ['messages'],
     queryFn: () => messages(),
@@ -53,7 +60,12 @@ export const useMessages = () => {
     },
   });
 
+  const clear = () => {
+    clearAllMessagesFn();
+    query.refetch();
+  };
+
   const toDisplay = query.data ? [...query.data].reverse() : [];
 
-  return { messages: toDisplay, addMessage: mutation.mutate };
+  return { messages: toDisplay, addMessage: mutation.mutate, clear };
 };

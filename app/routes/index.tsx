@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 import "../styles/globals.css"
 
 export const Route = createFileRoute("/")({
@@ -6,9 +6,6 @@ export const Route = createFileRoute("/")({
 });
 
 function RouteComponent() {
-  return (
-    <div style={{ backgroundColor: "black", height: "555px" }}>
-      <span>Hello "/"!</span>
-    </div>
-  );
+  // redirect to player
+  return redirect({ to: '/player' });
 }
