@@ -1,5 +1,5 @@
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { createServerFn, useServerFn } from '@tanstack/start';
+import { createServerFn, useServerFn } from '@tanstack/react-start';
 import { differenceInSeconds } from 'date-fns';
 import { and, eq, isNull, ne } from 'drizzle-orm';
 import { useEffect } from 'react';
@@ -167,7 +167,7 @@ export const useTasks = ({ showAborted = false, showArchived = false }: { showAb
   const getTasksQuery = useQuery({
     queryKey: ['tasks', showAborted, showArchived],
     queryFn: () => tasks({ data: { showAborted, showArchived } }),
-    refetchInterval: 1000,
+    refetchInterval: 5000,
   });
 
   const createTaskMutation = useMutation({

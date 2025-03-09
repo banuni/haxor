@@ -2,9 +2,11 @@ import { useMessages } from '../api/messages';
 import { createFileRoute } from '@tanstack/react-router';
 import { TasksPanel } from '../components/PlayerTasksPanel';
 import { useTasks } from '../api/tasks';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { getAnalysisMessage } from '../api/content/messageTemplates';
 import { RoundButton } from '../components/ui/round-button';
+import { Textarea } from '../components/ui/textarea';
+import { useSessionUser } from '../api/sessionUser';
 
 export const Route = createFileRoute('/player')({
   component: RouteComponent,
@@ -13,12 +15,22 @@ export const Route = createFileRoute('/player')({
 function RouteComponent() {
   const { messages, addMessage } = useMessages();
   const { createTask } = useTasks();
-  const [username, setUsername] = useState('user');
+  const { getUserNameQuery } = useSessionUser();
+  const username = getUserNameQuery.data ?? 'user';
   const targetInputRef = useRef<HTMLInputElement>(null);
   const goalInputRef = useRef<HTMLInputElement>(null);
   const algorithmInputRef = useRef<HTMLSelectElement>(null);
-  const handleEnterClick = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
+  // const [historyCount, setHistoryCount] = useState(0);
+
+  const handleEnterClick = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    // if ((e.key === 'ArrowUp' && historyCount > 0) || e.currentTarget.value === '') {
+    //   e.preventDefault();
+    //   setHistoryCount((historyCount) => historyCount + 1);
+    //   return;
+    // }
+    // setHistoryCount(0);
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
       const message = e.currentTarget.value;
       addMessage({
         fromName: username,
@@ -28,6 +40,10 @@ function RouteComponent() {
       e.currentTarget.value = '';
     }
   };
+  useEffect(() => {
+    // refetch username if we got new messages
+    getUserNameQuery.refetch();
+  }, [messages]);
   const onSupportClick = () => {
     supportMessages.forEach((message) => {
       addMessage(message);
@@ -70,17 +86,21 @@ function RouteComponent() {
     <div className="text-[#00ff00] bg-gray-200 flex w-full h-[100vh] font-mono">
       <div className="flex flex-col justify-between w-[60%] bg-black">
         <div className="flex justify-between">
-          <div className="text-[#00ff00] bg-avocado-600">Spaceship Hacker</div>
+          <div className="text-[#00ff00] border-[#00ff00] border-dotted border-b">Cyber System Mark I - {username}</div>
         </div>
-        <div className="text-[#00ff00] flex flex-col grow relative">
-          {messages.map((message, idx) => (
-            <div key={idx} className="flex gap-2">
+        <div className="text-[#00ff00] flex flex-col-reverse grow relative overflow-y-scroll">
+          {messages.reverse().map((message, idx) => (
+            <div key={idx} className="flex gap-2 whitespace-pre-wrap">
               <div>{message.fromName}:</div>
               <div>{message.content}</div>
             </div>
           ))}
         </div>
-        <input type="text" className="rounded-md p-2 border-top border-2 border-white bg-black" onKeyDown={handleEnterClick} />
+        <Textarea
+          className="rounded-md p-2 border-top border-2 border-white bg-black"
+          onKeyDown={handleEnterClick}
+          placeholder="Enter your message"
+        />
         <div className="text-[#00ff00] bg-gray-500 flex p-4 gap-2 ">
           <input type="text" className="rounded-md p-2 bg-black cursor-pointer" placeholder="target" ref={targetInputRef} />
           <input type="text" className="rounded-md p-2 bg-black cursor-pointer" placeholder="goal" ref={goalInputRef} />

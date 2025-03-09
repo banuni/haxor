@@ -9,6 +9,7 @@ import { buildMessagesString } from '../lib/build-messages-string';
 import copy from 'copy-to-clipboard';
 import { toast } from 'sonner';
 import { UserSettingsModal } from '../components/UserSettingsModal';
+import { useSessionUser } from '../api/sessionUser';
 export const Route = createFileRoute('/master')({
   component: RouteComponent,
 });
@@ -16,7 +17,15 @@ export const Route = createFileRoute('/master')({
 function RouteComponent() {
   const { messages, addMessage } = useMessages();
   const [fromEditable, setFromEditable] = useState(false);
-  const [username, setUsername] = useState('user');
+  const { getUserNameQuery, setUserNameMutation } = useSessionUser({
+    onChange: (newName) =>
+      addMessage({
+        fromName: 'System',
+        fromRole: 'system',
+        content: `User **${newName}** detected, welcome!`,
+      }),
+  });
+  const username = getUserNameQuery.data ?? '...';
   const [systemLevel, setSystemLevel] = useState<'basic' | 'pro' | 'premium'>('basic');
   const [from, setFrom] = useState('System');
   const { tasks } = useTasks({ showAborted: true });
@@ -43,7 +52,16 @@ function RouteComponent() {
           <div className="flex gap-2">
             <Button onClick={onCopyAll}>Copy All</Button>
             <SimpleConfirmButton onConfirm={clearAllMessages}>Clear All</SimpleConfirmButton>
-            <UserSettingsModal username={username} setUsername={setUsername} systemLevel={systemLevel} setSystemLevel={setSystemLevel} />
+            <UserSettingsModal
+              username={username}
+              setUsername={(newName) =>
+                setUserNameMutation({
+                  data: newName,
+                })
+              }
+              systemLevel={systemLevel}
+              setSystemLevel={setSystemLevel}
+            />
           </div>
         </div>
         <div className="flex flex-col grow bg-eggplant-100">

@@ -14,24 +14,21 @@ import { Label } from './ui/label';
 import { ArrowRightIcon } from 'lucide-react';
 export const MasterTaskCard = ({ task }: { task: Task }) => {
   return (
-    <div className="flex gap-2 border-white border-2 p-2 rounded-xl bg-slate-600">
-      <div className="flex flex-col gap-2">
-        <div className="">Details:</div>
-        <div>Target: {task.targetName}</div>
-        <div>Algorithm: {task.algorithmName}</div>
-        <div>Status: {task.status}</div>
-        <div>Goal: {task.goal}</div>
-
+    <div className=" border-white border-2 p-2 rounded-xl bg-slate-600">
+      <div className="font-bold">
+        Goal: {task.goal} → {task.targetName} using {task.algorithmName} - {task.status}
       </div>
-      {task.status === 'analyzing' ? (
-        <AnalysisPanel task={task} />
-      ) : task.status === 'in-progress' ? (
-        <PostAnalysisPanel task={task} />
-      ) : task.status === 'pending' ? (
-        <PendingPanel task={task} />
-      ) : (
-        <DonePanel task={task} />
-      )}
+      <div className="flex gap-2">
+        {task.status === 'analyzing' ? (
+          <AnalysisPanel task={task} />
+        ) : task.status === 'in-progress' ? (
+          <PostAnalysisPanel task={task} />
+        ) : task.status === 'pending' ? (
+          <PendingPanel task={task} />
+        ) : (
+          <DonePanel task={task} />
+        )}
+      </div>
     </div>
   );
 };

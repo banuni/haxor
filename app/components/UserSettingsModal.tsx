@@ -1,7 +1,7 @@
 import { SimpleSelect } from './SimpleSelect';
 import { Button } from './ui/button';
-import { DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from './ui/dialog';
-
+import { DialogClose, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from './ui/dialog';
+import { useRef } from 'react';
 import { Dialog } from './ui/dialog';
 import { Input } from './ui/input';
 
@@ -18,6 +18,7 @@ export function UserSettingsModal({
   systemLevel: 'basic' | 'pro' | 'premium';
   setSystemLevel: (systemLevel: 'basic' | 'pro' | 'premium') => void;
 }) {
+  const fieldRef = useRef<HTMLInputElement>(null);
   return (
     <Dialog>
       <DialogTrigger>
@@ -32,8 +33,10 @@ export function UserSettingsModal({
             <div className="flex flex-col gap-2">
               <div className="text-sm text-gray-500">Username</div>
               <div className="flex gap-2 pb-4 max-w-48">
-                <Input type="text" placeholder="Username" value={username} onChange={(e) => setUsername(e.target.value)} />
-                <Button onClick={() => setUsername('user')}>Set</Button>
+                <Input type="text" placeholder="Username" ref={fieldRef} defaultValue={username} />
+                <DialogClose asChild>
+                  <Button onClick={() => setUsername(fieldRef.current?.value ?? '')}>Set</Button>
+                </DialogClose>
               </div>
             </div>
 

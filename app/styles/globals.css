@@ -3,7 +3,8 @@
 @tailwind utilities;
  
 @layer base {
-    :root {
+  :root {
+      --color-green-hack: #00ff00;
       --background: 0 0% 100%;
       --foreground: 222.2 47.4% 11.2%;
       --muted: 210 40% 96.1%;

@@ -1,5 +1,5 @@
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { createServerFn, useServerFn } from '@tanstack/start';
+import { createServerFn, useServerFn } from '@tanstack/react-start';
 import { getDb } from '../db/core';
 import { messages, type Message, type NewMessage } from '../db/schema';
 import { desc, isNull } from 'drizzle-orm';
@@ -17,7 +17,7 @@ export const createMessageInDb = async (newMessage: NewMessage) => {
 const getMessages = createServerFn({
   method: 'GET',
 }).handler(async () => {
-  return await getDb().select().from(messages).where(isNull(messages.clearedAt)).limit(20).orderBy(desc(messages.createdAt));
+  return await getDb().select().from(messages).where(isNull(messages.clearedAt)).limit(100).orderBy(desc(messages.createdAt));
 });
 
 const createMessage = createServerFn({
