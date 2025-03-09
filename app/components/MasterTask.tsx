@@ -20,6 +20,8 @@ export const MasterTaskCard = ({ task }: { task: Task }) => {
         <div>Target: {task.targetName}</div>
         <div>Algorithm: {task.algorithmName}</div>
         <div>Status: {task.status}</div>
+        <div>Goal: {task.goal}</div>
+
       </div>
       {task.status === 'analyzing' ? (
         <AnalysisPanel task={task} />

@@ -12,6 +12,7 @@ CREATE TABLE `tasks` (
 	`description` text,
 	`task_type` text NOT NULL,
 	`status` text NOT NULL,
+	`goal` text,
 	`started_at` integer,
 	`probability` integer,
 	`estimated_seconds_to_complete` integer,

@@ -23,6 +23,7 @@ export const tasks = sqliteTable('tasks', {
   status: text('status', {
     enum: ['analyzing', 'pending', 'in-progress', 'success', 'fail', 'aborted'],
   }).notNull(),
+  goal: text('goal'),
   startedAt: integer('started_at', { mode: 'timestamp' }),
   probability: integer('probability'), // Stored as integer percentage
   estimatedSecondsToComplete: integer('estimated_seconds_to_complete'),
