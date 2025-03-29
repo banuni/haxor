@@ -21,15 +21,31 @@ function RouteComponent() {
   const targetInputRef = useRef<HTMLInputElement>(null);
   const goalInputRef = useRef<HTMLInputElement>(null);
   const algorithmInputRef = useRef<HTMLSelectElement>(null);
-  // const [historyCount, setHistoryCount] = useState(0);
+  const [historyCount, setHistoryCount] = useState(0);
+  const historyMessage = messages[messages.length - historyCount - 1];
 
-  const handleEnterClick = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    // if ((e.key === 'ArrowUp' && historyCount > 0) || e.currentTarget.value === '') {
-    //   e.preventDefault();
-    //   setHistoryCount((historyCount) => historyCount + 1);
-    //   return;
-    // }
-    // setHistoryCount(0);
+  const onKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'ArrowUp' && (historyCount > 0 || e.currentTarget.value === '')) {
+      e.preventDefault();
+      const newHistoryCount = historyCount + 1;
+      const historyUserMessage = messages.filter((message) => message.fromRole === 'user').at(newHistoryCount - 1);
+      if (historyUserMessage) {
+        e.currentTarget.value = historyUserMessage.content;
+      }
+      setHistoryCount(newHistoryCount);
+      return;
+    }
+    if (e.key === 'ArrowDown' && historyCount > 0) {
+      e.preventDefault();
+      const newHistoryCount = historyCount - 1;
+      const historyUserMessage = messages.filter((message) => message.fromRole === 'user').at(newHistoryCount - 1);
+      if (historyUserMessage) {
+        e.currentTarget.value = historyUserMessage.content;
+      }
+      setHistoryCount(newHistoryCount);
+      return;
+    }
+    setHistoryCount(0);
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       const message = e.currentTarget.value;
@@ -61,7 +77,7 @@ function RouteComponent() {
     }
     addMessage({
       fromName: username,
-      fromRole: 'system',
+      fromRole: 'user',
       content: `CHECK: ${goal} - ${target} using ${algorithm}`,
     });
     createTask({
@@ -81,6 +97,7 @@ function RouteComponent() {
       });
     }, 1000);
     targetInputRef.current!.value = '';
+    goalInputRef.current!.value = '';
   };
 
   return (
@@ -101,8 +118,8 @@ function RouteComponent() {
         </div>
         <Textarea
           className="rounded-md p-2 border-top border-2 border-white bg-black"
-          onKeyDown={handleEnterClick}
-          placeholder="Enter your message"
+          onKeyDown={onKeyDown}
+          placeholder={`Enter your message ${historyCount > 0 ? `(history: ${historyMessage.content})` : ''}`}
         />
         <div className="text-[#00ff00] bg-gray-500 flex p-4 gap-2 ">
           <input type="text" className="rounded-md p-2 bg-black cursor-pointer" placeholder="target" ref={targetInputRef} />
