@@ -6,7 +6,7 @@ import { useEffect, useRef, useState } from 'react';
 import { getAnalysisMessage } from '../api/content/messageTemplates';
 import { RoundButton } from '../components/ui/round-button';
 import { Textarea } from '../components/ui/textarea';
-import { useSessionUser } from '../api/sessionUser';
+import { useSessionData } from '../api/sessionData';
 
 export const Route = createFileRoute('/player')({
   component: RouteComponent,
@@ -15,8 +15,9 @@ export const Route = createFileRoute('/player')({
 function RouteComponent() {
   const { messages, addMessage } = useMessages();
   const { createTask } = useTasks();
-  const { getUserNameQuery } = useSessionUser();
-  const username = getUserNameQuery.data ?? 'user';
+  const { getSessionDataQuery } = useSessionData();
+  const username = getSessionDataQuery.data?.username ?? 'user';
+  const systemLevel = getSessionDataQuery.data?.systemLevel ?? 'basic';
   const targetInputRef = useRef<HTMLInputElement>(null);
   const goalInputRef = useRef<HTMLInputElement>(null);
   const algorithmInputRef = useRef<HTMLSelectElement>(null);
@@ -42,7 +43,7 @@ function RouteComponent() {
   };
   useEffect(() => {
     // refetch username if we got new messages
-    getUserNameQuery.refetch();
+    getSessionDataQuery.refetch();
   }, [messages]);
   const onSupportClick = () => {
     supportMessages.forEach((message) => {
@@ -61,7 +62,7 @@ function RouteComponent() {
     addMessage({
       fromName: username,
       fromRole: 'system',
-      content: `CHECK ${target} using ${algorithm}`,
+      content: `CHECK: ${goal} - ${target} using ${algorithm}`,
     });
     createTask({
       description: getAnalysisMessage(target, algorithm),
@@ -86,7 +87,9 @@ function RouteComponent() {
     <div className="text-[#00ff00] bg-gray-200 flex w-full h-[100vh] font-mono">
       <div className="flex flex-col justify-between w-[60%] bg-black">
         <div className="flex justify-between">
-          <div className="text-[#00ff00] border-[#00ff00] border-dotted border-b">Cyber System Mark I - {username}</div>
+          <div className="text-[#00ff00] border-[#00ff00] border-dotted border-b">
+            {`Cyber System ${systemLevelToTitle[systemLevel]} - ${username}`}
+          </div>
         </div>
         <div className="text-[#00ff00] flex flex-col-reverse grow relative overflow-y-scroll">
           {messages.reverse().map((message, idx) => (
@@ -154,3 +157,9 @@ const supportMessages = [
     content: 'delta - probability - xX time yyyyy',
   },
 ];
+
+const systemLevelToTitle = {
+  basic: 'Mark I',
+  pro: 'Mark II Pro',
+  premium: 'Mark III Premium',
+};

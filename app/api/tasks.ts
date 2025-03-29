@@ -155,10 +155,19 @@ const archiveTaskEp = createServerFn({
     await getDb().update(tasks).set({ archivedAt: new Date() }).where(eq(tasks.id, ctx.data));
   });
 
+const resolveTaskEp = createServerFn({
+  method: 'POST',
+})
+  .validator((data: { taskId: string; status: 'success' | 'fail' }) => data)
+  .handler(async (ctx) => {
+    await getDb().update(tasks).set({ status: ctx.data.status }).where(eq(tasks.id, ctx.data.taskId));
+  });
+
 // client side code
 export const useTasks = ({ showAborted = false, showArchived = false }: { showAborted?: boolean; showArchived?: boolean } = {}) => {
   const tasks = useServerFn(getTasksEp);
   const checkAllTasksFn = useServerFn(checkAllTasks);
+  const resolveTaskFn = useServerFn(resolveTaskEp);
   const resolveAnalysisFn = useServerFn(resolveAnalysisEp);
   const abortTaskFn = useServerFn(abortTaskEp);
   const startTaskFn = useServerFn(startTaskEp);
@@ -176,6 +185,10 @@ export const useTasks = ({ showAborted = false, showArchived = false }: { showAb
 
   const resolveAnalysisMutation = useMutation({
     mutationFn: resolveAnalysisFn,
+  });
+
+  const resolveTaskMutation = useMutation({
+    mutationFn: resolveTaskFn,
   });
 
   const archiveTaskMutation = useMutation({
@@ -214,5 +227,6 @@ export const useTasks = ({ showAborted = false, showArchived = false }: { showAb
     abortTask: (taskId: string) => abortTaskMutation.mutate({ data: taskId }),
     archiveTask: (taskId: string) => archiveTaskMutation.mutate({ data: taskId }),
     createTask: (newTask: NewTask) => createTaskMutation.mutate({ data: newTask }),
+    resolveTask: (data: { taskId: string; status: 'success' | 'fail' }) => resolveTaskMutation.mutate({ data }),
   };
 };

@@ -9,7 +9,7 @@ import { buildMessagesString } from '../lib/build-messages-string';
 import copy from 'copy-to-clipboard';
 import { toast } from 'sonner';
 import { UserSettingsModal } from '../components/UserSettingsModal';
-import { useSessionUser } from '../api/sessionUser';
+import { useSessionData } from '../api/sessionData';
 export const Route = createFileRoute('/master')({
   component: RouteComponent,
 });
@@ -17,15 +17,20 @@ export const Route = createFileRoute('/master')({
 function RouteComponent() {
   const { messages, addMessage } = useMessages();
   const [fromEditable, setFromEditable] = useState(false);
-  const { getUserNameQuery, setUserNameMutation } = useSessionUser({
-    onChange: (newName) =>
+  const { getSessionDataQuery, setUserNameMutation, setSystemLevelMutation } = useSessionData({
+    onUserNameChange: (newName) =>
       addMessage({
         fromName: 'System',
         fromRole: 'system',
         content: `User **${newName}** detected, welcome!`,
       }),
+    onSystemLevelChange: (newSystemLevel) => {
+      if (['basic', 'pro', 'premium'].includes(newSystemLevel)) {
+        setSystemLevel(newSystemLevel as 'basic' | 'pro' | 'premium');
+      }
+    },
   });
-  const username = getUserNameQuery.data ?? '...';
+  const username = getSessionDataQuery.data?.username ?? '...';
   const [systemLevel, setSystemLevel] = useState<'basic' | 'pro' | 'premium'>('basic');
   const [from, setFrom] = useState('System');
   const { tasks } = useTasks({ showAborted: true });
@@ -54,13 +59,9 @@ function RouteComponent() {
             <SimpleConfirmButton onConfirm={clearAllMessages}>Clear All</SimpleConfirmButton>
             <UserSettingsModal
               username={username}
-              setUsername={(newName) =>
-                setUserNameMutation({
-                  data: newName,
-                })
-              }
+              setUsername={setUserNameMutation}
               systemLevel={systemLevel}
-              setSystemLevel={setSystemLevel}
+              setSystemLevel={setSystemLevelMutation}
             />
           </div>
         </div>

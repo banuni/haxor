@@ -36,6 +36,7 @@ export const MasterTaskCard = ({ task }: { task: Task }) => {
 const PostAnalysisPanel = ({ task }: { task: Task }) => {
   const [elapsedTime, setElapsedTime] = useState(task.startedAt ? differenceInSeconds(new Date(), task.startedAt) : 0);
   const remainingTime = task.estimatedSecondsToComplete! - elapsedTime;
+  const [switchState, setSwitchState] = useState<'success' | 'fail'>('success');
   useEffect(() => {
     const interval = setInterval(() => {
       const diff = differenceInSeconds(new Date(), task.startedAt!);
@@ -46,6 +47,7 @@ const PostAnalysisPanel = ({ task }: { task: Task }) => {
     return () => clearInterval(interval);
   }, [task.startedAt]);
   const [value, setValue] = useState<'manual' | 'auto'>('manual');
+  const { resolveTask } = useTasks();
   return (
     <div className="flex gap-2">
       <div className="flex flex-col gap-2">
@@ -65,14 +67,20 @@ const PostAnalysisPanel = ({ task }: { task: Task }) => {
       <div className="flex flex-col gap-2">
         <div className="flex space-x-2 items-center">
           <Checkbox checked={value === 'auto'} onCheckedChange={(checked) => setValue(checked ? 'auto' : 'manual')} />
-          <div>Auto Resolution?</div>
-          {value === 'auto' ? <div>Auto</div> : <div>Manual</div>}
+          <div>Override Resolution?</div>
         </div>
         {value === 'auto' ? (
-          <div className="flex items-center gap-2">
-            Fail
-            <Switch className="data-[state=unchecked]:bg-red-500 data-[state=checked]:bg-lime-500" />
-            Success
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center gap-2">
+              Fail
+              <Switch
+                className="data-[state=unchecked]:bg-red-500 data-[state=checked]:bg-lime-500"
+                checked={switchState === 'success'}
+                onCheckedChange={(checked) => setSwitchState(checked ? 'success' : 'fail')}
+              />
+              Success
+            </div>
+            <Button onClick={() => resolveTask({ taskId: task.id, status: switchState })}>{switchState} now</Button>
           </div>
         ) : (
           <div className="flex items-center gap-2">According to stats</div>
@@ -155,10 +163,11 @@ const AnalysisPanel = ({ task }: { task: Task }) => {
 };
 
 const PendingPanel = ({ task }: { task: Task }) => {
+  const { archiveTask } = useTasks();
   return (
     <div className="flex flex-col gap-2">
       <div>Waiting for player response...</div>
-      <Button>Some action...</Button>
+      <Button onClick={() => archiveTask(task.id)}>Archive</Button>
     </div>
   );
 };
