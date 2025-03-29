@@ -4,9 +4,9 @@ import { TasksPanel } from '../components/PlayerTasksPanel';
 import { useTasks } from '../api/tasks';
 import { useEffect, useRef, useState } from 'react';
 import { getAnalysisMessage } from '../api/content/messageTemplates';
-import { RoundButton } from '../components/ui/round-button';
 import { Textarea } from '../components/ui/textarea';
 import { useSessionData } from '../api/sessionData';
+import { StealthButton } from '../components/StealthButton';
 
 export const Route = createFileRoute('/player')({
   component: RouteComponent,
@@ -139,8 +139,7 @@ function RouteComponent() {
           </button>
         </div>
         <div className="flex gap-2 p-4">
-          <RoundButton text="Stealth" state="ready" />
-          {/* <RoundButton text="Another thing" state="active" /> */}
+          <StealthButton />
         </div>
       </div>
       {tasks && (
